@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Medical QR Card</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Base Styles & Input Mode Color Scheme: Blue and Black Gradient */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e3a8a);
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+            box-sizing: border-box;
+        }
+
+        /* Card Container */
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+
+        h2, h3 {
+            text-align: center;
+            margin-top: 0;
+            letter-spacing: 1px;
+        }
+
+        label {
+            display: block;
+            margin: 12px 0 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        option {
+            background: #111827;
+            color: white;
+        }
+
+        .pw-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pw-row input {
+            flex: 1;
+        }
+
+        .btn-toggle {
+            background-color: #4b5563;
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 13px;
+            height: 42px;
+        }
+
+        .btn-toggle:hover {
+            background-color: #374151;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        /* Scanned/Result Card Color Scheme: Black and Red Gradient */
+        body.scanned-mode {
+            background: linear-gradient(135deg, #000000, #7f1d1d);
+        }
+
+        body.scanned-mode button {
+            background: #dc2626;
+        }
+        body.scanned-mode button:hover {
+            background: #b91c1c;
+        }
+
+        /* QR Display Area */
+        #qr-section, #card-view {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #qrcode {
+            display: inline-block;
+            margin: 20px 0;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .emergency-badge {
+            background: #dc2626;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+            animation: blink 2s infinite;
+        }
+
+        .amb-link {
+            color: #60a5fa;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .info-display {
+            text-align: left;
+            background: rgba(0,0,0,0.4);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .hospital-list {
+            max-height: 180px;
+            overflow-y: auto;
+            text-align: left;
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .maps-btn {
+            display: inline-block;
+            background: #dc2626;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: #1e293b;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            margin-top: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- FORM VIEW -->
+    <div id="form-view">
+        <h2 id="form-title">Medical Info Creator</h2>
+        <p style="text-align: center; font-size: 13px; color: #93c5fd;">Fill in details to generate your Emergency QR Code</p>
+        
+        <label>Full Name:</label>
+        <input type="text" id="name" placeholder="e.g. Rahul Sharma">
+
+        <label>Age:</label>
+        <input type="number" id="age" placeholder="e.g. 25">
+
+        <label>Blood Group:</label>
+        <select id="blood-group">
+            <option value="Unknown">Select Blood Group</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+        </select>
+
+        <label>Emergency Contact Number:</label>
+        <input type="tel" id="phone" placeholder="e.g. +91 98765 43210">
+
+        <label>Allergies / Conditions:</label>
+        <input type="text" id="allergy" placeholder="e.g. Peanut Allergy, Diabetes, Asthma">
+
+        <label>Condition / Symptom Info:</label>
+        <textarea id="symptom-info" rows="3" placeholder="Type custom symptoms, medications, or critical notes here..."></textarea>
+
+        <label>Security Password (for editing later):</label>
+        <div class="pw-row">
+            <input type="password" id="password" placeholder="Enter password">
+            <button type="button" class="btn-toggle" id="pwToggleBtn" onclick="togglePasswordVisibility('password', 'pwToggleBtn')">Show Password</button>
+        </div>
+
+        <button onclick="generateQRCode()">MAKE QR CODE</button>
+        
+        <div id="qr-section">
+            <h3>Your QR Code is Ready!</h3>
+            <div id="qrcode"></div>
+            <p style="font-size: 12px; color: #a1a1aa;">Screenshot or print this QR code. When scanned, it opens this card.</p>
+            <button onclick="simulateScan()" style="background: #4b5563;">Simulate Scan (Test Card)</button>
+        </div>
+    </div>
+
+    <!-- CARD / SCANNED VIEW -->
+    <div id="card-view">
+        <div class="emergency-badge">EMERGENCY MEDICAL CARD</div>
+        
+        <label for="lang-select">Choose Language / भाषा चुनें:</label>
+        <select id="lang-select" onchange="changeLanguage()" style="background: #111827; color: #f3f4f6;">
+            <option value="en">English</option>
+            <option value="mr">Marathi (मराठी)</option>
+            <option value="hi">Hindi (हिंदी)</option>
+            <option value="gu">Gujarati (ગુજરાતી)</option>
+            <option value="ta">Tamil (தமிழ்)</option>
+            <option value="bn">Bengali (বাংলা)</option>
+            <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+            <option value="as">Assamese (অসমীয়া)</option>
+            <option value="ml">Malayalam (മലയാളം)</option>
+            <option value="ur">Urdu (اردو)</option>
+        </select>
+
+        <div class="info-display">
+            <p><strong><span class="lbl-name">Name</span>:</strong> <span id="view-name" class="translatable"></span></p>
+            <p><strong><span class="lbl-age">Age</span>:</strong> <span id="view-age"></span></p>
+            <p><strong><span class="lbl-blood">Blood Group</span>:</strong> <span id="view-blood"></span></p>
+            <p><strong><span class="lbl-phone">Emergency Contact</span>:</strong> <span id="view-phone"></span></p>
+            <p><strong><span class="lbl-allergy">Medical Condition</span>:</strong> <span id="view-allergy" class="translatable"></span></p>
+            <p><strong><span class="lbl-info">Important Information</span>:</strong> <span id="view-info" class="translatable"></span></p>
+        </div>
+
+        <!-- AMBULANCE DIRECT DIAL LINKS -->
+        <div class="emergency-badge" id="amb-display" style="background: #000; border: 2px solid #dc2626; animation: none;">
+            🚑 <span class="lbl-amb">AMBULANCE</span>: 
+            <a href="tel:102" class="amb-link"><span class="amb-num">102</span></a> / 
+            <a href="tel:108" class="amb-link"><span class="amb-num">108</span></a>
+        </div>
+
+        <label class="lbl-search">Search Nearest City/Suburb Hospital:</label>
+        <input type="text" id="search-city" placeholder="Type ANY suburb or city in India..." oninput="searchHospitals()">
+        <div class="hospital-list" id="hospital-results">
+            Type a location to find nearby hospitals...
+        </div>
+
+        <button onclick="openPasswordModal()" style="margin-top:20px; background:#007bff;">EDIT QR</button>
+        <button onclick="createNewCard()" style="margin-top:10px; background:#4b5563;">Create New Card</button>
+    </div>
+
+</div>
+
+<!-- PASSWORD MODAL -->
+<div id="passwordModal" class="modal-overlay hidden">
+    <div class="modal">
+        <h3 style="margin-top: 0;">Password Required</h3>
+        <p style="font-size: 14px; color: #94a3b8;">Enter security password to edit this QR Code:</p>
+        
+        <div class="pw-row">
+            <input type="password" id="editPasswordInput" placeholder="Enter password">
+            <button type="button" class="btn-toggle" id="editPwToggleBtn" onclick="togglePasswordVisibility('editPasswordInput', 'editPwToggleBtn')">Show Password</button>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" onclick="closePasswordModal()" style="background: #dc2626;">Cancel</button>
+            <button type="button" onclick="verifyAndEdit()" style="background: #2563eb;">Confirm Edit</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let originalData = { name: "", allergy: "", info: "", age: "", phone: "", blood: "", password: "" };
+    let currentRecordId = null;
+
+    const hospitalDatabase = [
+        { city: "mumbai", suburb: "juhu", name: "Arogya Nidhi Hospital, Juhu" },
+        { city: "mumbai", suburb: "juhu", name: "Cooper Hospital, Vile Parle / Juhu" },
+        { city: "mumbai", suburb: "lokhandwala", name: "Kokilaben Dhirubhai Ambani Hospital, Andheri West" },
+        { city: "mumbai", suburb: "andheri", name: "SevenHills Hospital, Andheri East" },
+        { city: "mumbai", suburb: "andheri", name: "Criticare Asia Multispecialty Hospital, Andheri" },
+        { city: "mumbai", suburb: "dn nagar", name: "Kokilaben Hospital Extension Clinic, DN Nagar" },
+        { city: "mumbai", suburb: "marol", name: "SevenHills Medical Center, Marol" },
+        { city: "mumbai", suburb: "bandra", name: "Lilavati Hospital & Research Centre, Bandra West" },
+        { city: "pune", suburb: "lokhandwala", name: "Lifepoint Multispecialty Hospital, Pune Suburbs" },
+        { city: "pune", suburb: "shivajinagar", name: "Sancheti Hospital, Shivajinagar" },
+        { city: "delhi", suburb: "connaught place", name: "Ram Manohar Lohia (RML) Hospital, Central Delhi" },
+        { city: "delhi", suburb: "saket", name: "Max Super Speciality Hospital, Saket" },
+        { city: "bengaluru", suburb: "indiranagar", name: "Manipal Hospital, Hal Road" },
+        { city: "bengaluru", suburb: "whitefield", name: "Vaidehi Institute of Medical Sciences" },
+        { city: "ahmedabad", suburb: "asarwa", name: "Civil Hospital, Asarwa" },
+        { city: "surat", suburb: "adajan", name: "SMIMER Hospital & Medical College" },
+        { city: "raigad", suburb: "alibag", name: "Raigad District Civil Hospital, Alibag" },
+        { city: "amritsar", suburb: "ranjit avenue", name: "Amandeep Hospital, Ranjit Avenue" },
+        { city: "dharamshala", suburb: "kotwali bazar", name: "Zonal Hospital, Dharamshala" },
+        { city: "jalandhar", suburb: "model town", name: "SGL Charitable Hospital, Jalandhar Suburbs" },
+        { city: "jaipur", suburb: "malviya nagar", name: "Apex Super Speciality Hospital, Malviya Nagar" },
+        { city: "varanasi", suburb: "lanka", name: "Sir Sunderlal Hospital (BHU), Lanka" },
+        { city: "patna", suburb: "kankarbagh", name: "Patna Medical College Hospital (PMCH) Suburb Branch" },
+        { city: "nagpur", suburb: "sitabuldi", name: "Care Hospitals, Sitabuldi" },
+        { city: "goa", suburb: "panaji", name: "Goa Medical College & Hospital (GMC), Bambolim" }
+    ];
+
+    const translations = {
+        en: { name: "Name", age: "Age", blood: "Blood Group", phone: "Emergency Contact", allergy: "Medical Condition", info: "Important Information", amb: "AMBULANCE", search: "Search Nearest City/Suburb Hospital:" },
+        mr: { name: "नाव", age: "वय", blood: "रक्त गट", phone: "आणीबाणीचा संपर्क", allergy: "वैद्यकीय स्थिती", info: "महत्वाची माहिती", amb: "रुग्णवाहिका", search: "जवळचे शहर/उपनगर रुग्णालय शोधा:" },
+        hi: { name: "नाम", age: "उम्र", blood: "रक्त समूह", phone: "आपातकालीन संपर्क", allergy: "चिकित्सा स्थिति", info: "महत्वपूर्ण जानकारी", amb: "एम्बुलेंस", search: "निकटतम शहर/उपनगर अस्पताल खोजें:" },
+        gu: { name: "નામ", age: "ઉંમર", blood: "બ્લડ ગ્રુપ", phone: "ઇમરજન્સી સંપર્ક", allergy: "તબીબી સ્થિતિ", info: "મહત્વપૂર્ણ માહિતી", amb: "એમ્બ્યુલન્સ", search: "નજીકની સિટી/ઉપનગર હોસ્પિટલ શોધો:" },
+        ta: { name: "பெயர்", age: "வயது", blood: "இரத்த வகை", phone: "அவசர தொடர்பு", allergy: "மருத்துவ நிலை", info: "முக்கியமான தகவல்", amb: "ஆம்புலன்ஸ்", search: "அருகிலுள்ள நகரம்/புறநகர் மருத்துவமனையைத் தேடுங்கள்:" },
+        bn: { name: "নাম", age: "বয়স", blood: "রক্তের গ্রুপ", phone: "জরুরী যোগাযোগ", allergy: "চিকিৎসা অবস্থা", info: "গুরুত্বপূর্ণ তথ্য", amb: "অ্যাম্বুলেন্স", search: "নিকটবর্তী শহর/শহরতলি হাসপাতাল খুঁজুন:" },
+        pa: { name: "ਨਾਮ", age: "ਉਮਰ", blood: "ਬਲੱਡ ਗਰੁੱਪ", phone: "ਐਮਰਜੈਂਸੀ ਸੰਪਰਕ", allergy: "ਮੈਡੀਕਲ ਸਥਿਤੀ", info: "ਮਹੱਤਵਪੂਰਨ ਜਾਣਕਾਰੀ", amb: "ਐਂਬੂਲੈਂਸ", search: "ਨਜ਼ਦੀਕੀ ਸ਼ਹਿਰ/ਉਪਨਗਰ ਹਸਪਤਾਲ ਦੀ ਖੋਜ ਕਰੋ:" },
+        as: { name: "নাম", age: "বয়স", blood: "ৰক্ত গোট", phone: "জৰুৰীকালীন যোগাযোগ", allergy: "চিকিৎসাৰ অৱস্থা", info: "গুৰুত্বপূৰ্ণ তথ্য", amb: "এম্বুলেন্স", search: "নিকটৱৰ্তী চহৰ/শহৰতলি চিকিৎসালয় সন্ধান কৰক:" },
+        ml: { name: "പേര്", age: "വയസ്സ്", blood: "രക്തഗ്രൂപ്പ്", phone: "അടിയന്തിര ബന്ധം", allergy: "രോഗാവസ്ഥ", info: "പ്രധാന വിവരങ്ങൾ", amb: "ആംബുലൻസ്", search: "അടുത്തുള്ള നഗരം/ഉപനഗര ആശുപത്രി തിരയുക:" },
+        ur: { name: "نام", age: "عمر", blood: "بلڈ گروپ", phone: "ایمرجنسی رابطہ", allergy: "طبی حالت", info: "اہم معلومات", amb: "ایمبولینس", search: "قریبی شہر یا مضافاتی ہسپتال تلاش کریں:" }
+    };
+
+    const numMaps = {
+        en: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+        mr: ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"],
+        hi: ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"],
+        gu: ["૦", "૧", "૨", "૩", "૪", "૫", "૬", "૭", "८", "૯"],
+        ta: ["௦", "௧", "௨", "௩", "௮", "௫", "௬", "௭", "௮", "௯"],
+        bn: ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"],
+        pa: ["੦", "੧", "੨", "੩", "੪", "੫", "੬", "੭", "੮", "੯"],
+        as: ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"],
+        ml: ["൦", "൧", "൨", "൩", "൪", "൫", "൬", "```html
+        ml: ["൦", "൧", "൨", "൩", "൪", "൫", "൬", "```html
+        ml: ["൦", "൧", "൨", "൩", "൪", "൫", "൬", "൭", "൮", "൯"],
+        ur: ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"]
+    };
+
+    function translateNumbers(str, targetLang) {
+        if (!str || !numMaps[targetLang]) return str;
+        return str.toString().split('').map(char => {
+            const index = numMaps['en'].indexOf(char);
+            return index !== -1 ? numMaps[targetLang][index] : char;
+        }).join('');
+    }
+
+    function togglePasswordVisibility(inputId, btnId) {
+        const input = document.getElementById(inputId);
+        const btn = document.getElementById(btnId);
+        if (input.type === "password") {
+            input.type = "text";
+            btn.innerText = "Hide Password";
+        } else {
+            input.type = "password";
+            btn.innerText = "Show Password";
+        }
+    }
+
+    let generatedUrl = "";
+
+    function generateQRCode() {
+        const name = document.getElementById('name').value || "Not Provided";
+        const age = document.getElementById('age').value || "N/A";
+        const blood = document.getElementById('blood-group').value || "Unknown";
+        const phone = document.getElementById('phone').value || "N/A";
+        const allergy = document.getElementById('allergy').value || "None Specified";
+        const info = document.getElementById('symptom-info').value || "None Provided";
+        const password = document.getElementById('password').value || "";
+
+        if (!currentRecordId) {
+            currentRecordId = 'med_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        }
+
+        const medicalData = { id: currentRecordId, name, age, blood, phone, allergy, info, password };
+        localStorage.setItem('med_card_' + currentRecordId, JSON.stringify(medicalData));
+
+        const baseUrl = window.location.href.split('?')[0];
+        generatedUrl = `${baseUrl}?id=${currentRecordId}`;
+
+        document.getElementById("qrcode").innerHTML = "";
+        
+        new QRCode(document.getElementById("qrcode"), {
+            text: generatedUrl,
+            width: 200,
+            height: 200,
+            correctLevel: QRCode.CorrectLevel.L
+        });
+
+        document.getElementById('qr-section').style.display = 'block';
+    }
+
+    function simulateScan() {
+        if (generatedUrl) {
+            window.location.href = generatedUrl;
+        }
+    }
+
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        if (urlParams.has('id')) {
+            const id = urlParams.get('id');
+            const stored = localStorage.getItem('med_card_' + id);
+            if (stored) {
+                const data = JSON.parse(stored);
+                loadCardView(data);
+                return;
+            }
+        }
+
+        if (urlParams.has('name')) {
+            originalData.name = decodeURIComponent(urlParams.get('name') || "");
+            originalData.age = decodeURIComponent(urlParams.get('age') || "");
+            originalData.phone = decodeURIComponent(urlParams.get('phone') || "");
+            originalData.allergy = decodeURIComponent(urlParams.get('allergy') || "");
+            originalData.info = decodeURIComponent(urlParams.get('info') || "");
+            originalData.blood = decodeURIComponent(urlParams.get('blood') || "Unknown");
+            originalData.password = decodeURIComponent(urlParams.get('password') || "");
+            loadCardView(originalData);
+        }
+    };
+
+    function loadCardView(data) {
+        document.body.classList.add('scanned-mode');
+        document.getElementById('form-view').style.display = 'none';
+        document.getElementById('card-view').style.display = 'block';
+
+        originalData = data;
+        currentRecordId = data.id || null;
+
+        document.getElementById('view-name').innerText = data.name;
+        document.getElementById('view-age').innerText = data.age;
+        document.getElementById('view-blood').innerText = data.blood;
+        document.getElementById('view-phone').innerText = data.phone;
+        document.getElementById('view-allergy').innerText = data.allergy;
+        document.getElementById('view-info').innerText = data.info;
+        
+        searchHospitals();
+    }
+
+    function openPasswordModal() {
+        document.getElementById('editPasswordInput').value = "";
+        document.getElementById('passwordModal').classList.remove('hidden');
+    }
+
+    function closePasswordModal() {
+        document.getElementById('passwordModal').classList.add('hidden');
+    }
+
+    function verifyAndEdit() {
+        const enteredPw = document.getElementById('editPasswordInput').value;
+        if (enteredPw === originalData.password) {
+            closePasswordModal();
+            
+            document.body.classList.remove('scanned-mode');
+            document.getElementById('card-view').style.display = 'none';
+            document.getElementById('form-view').style.display = 'block';
+            document.getElementById('form-title').innerText = "Edit Medical Card";
+
+            document.getElementById('name').value = originalData.name;
+            document.getElementById('age').value = originalData.age;
+            document.getElementById('blood-group').value = originalData.blood;
+            document.getElementById('phone').value = originalData.phone;
+            document.getElementById('allergy').value = originalData.allergy;
+            document.getElementById('symptom-info').value = originalData.info;
+            document.getElementById('password').value = originalData.password;
+        } else {
+            alert("Incorrect Password! Please try again.");
+        }
+    }
+
+    function createNewCard() {
+        window.location.href = window.location.href.split('?')[0];
+    }
+
+    async function translateText(text, targetLang) {
+        if (!text || text === "None Provided" || text === "None Specified" || text === "Not Provided" || text === "N/A" || text === "Unknown") return text;
+        if (targetLang === 'en') return text;
+        
+        try {
+            const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
+            const data = await res.json();
+            return data[0].map(item => item[0]).join('');
+        } catch (error) {
+            console.error("Translation missing or timed out:", error);
+            return text;
+        }
+    }
+
+    async function changeLanguage() {
+        const lang = document.getElementById('lang-select').value;
+        const textLabels = translations[lang];
+
+        document.querySelector('.lbl-name').innerText = textLabels.name;
+        document.querySelector('.lbl-age').innerText = textLabels.age;
+        document.querySelector('.lbl-blood').innerText = textLabels.blood;
+        document.querySelector('.lbl-phone').innerText = textLabels.phone;
+        document.querySelector('.lbl-allergy').innerText = textLabels.allergy;
+        document.querySelector('.lbl-info').innerText = textLabels.info;
+        document.querySelector('.lbl-amb').innerText = textLabels.amb;
+        document.querySelector('.lbl-search').innerText = textLabels.search;
+
+        document.getElementById('view-age').innerText = translateNumbers(originalData.age, lang);
+        document.getElementById('view-phone').innerText = translateNumbers(originalData.phone, lang);
+        
+        const nums = document.querySelectorAll('.amb-num');
+        if (nums.length >= 2) {
+            nums[0].innerText = translateNumbers("102", lang);
+            nums[1].innerText = translateNumbers("108", lang);
+        }
+
+        document.getElementById('view-name').innerText = await translateText(originalData.name, lang);
+        document.getElementById('view-allergy').innerText = await translateText(originalData.allergy, lang);
+        document.getElementById('view-info').innerText = await translateText(originalData.info, lang);
+    }
+
+    function searchHospitals() {
+        const query = document.getElementById('search-city').value.toLowerCase().trim();
+        const resultsDiv = document.getElementById('hospital-results');
+        
+        if(query === "") {
+            resultsDiv.innerHTML = "<strong>Quick Cache Recommendations:</strong><br>• Cooper Hospital, Juhu<br>• Max Hospital, Delhi<br>• Kokilaben Hospital, Lokhandwala";
+            return;
+        }
+
+        let filtered = hospitalDatabase.filter(h => 
+            h.city.includes(query) || h.suburb.includes(query)
+        );
+
+        if(filtered.length > 0) {
+            let output = filtered.map(h => `• ${h.name} (${h.city.toUpperCase()})`).join('<br>');
+            output += `<br><br><span style="color:#60a5fa;">Not finding your specific local clinic?</span><br>`;
+            output += `<a class="maps-btn" href="https://www.google.com/maps/search/hospitals+in+${encodeURIComponent(query)}+India" target="_blank">🔎 Find All Hospitals in ${query} on Maps</a>`;
+            resultsDiv.innerHTML = output;
+        } else {
+            let output = `No fixed cache matching "${query}".<br>Click below to find all live hospitals in this location:<br>`;
+            output += `<a class="maps-btn" href="https://www.google.com/maps/search/hospitals+in+${encodeURIComponent(query)}+India" target="_blank">🗺️ Open Google Maps for ${query}</a>`;
+            resultsDiv.innerHTML = output;
+        }
+    }
+</script>
+</body>
+</html>
